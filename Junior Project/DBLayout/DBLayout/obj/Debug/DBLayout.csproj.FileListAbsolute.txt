@@ -1,0 +1,8 @@
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\bin\Debug\DBLayout.exe.config
+C:\Users\Keyul\Documents\GitHub\white-elephant\DBLayout\DBLayout\bin\Debug\DBLayout.exe.config
+C:\Users\Pat\Documents\School\CST316\ProjectMain\white-elephant\DBLayout\DBLayout\bin\Debug\DBLayout.exe.config
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\bin\Debug\DBLayout.exe
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\bin\Debug\DBLayout.pdb
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\obj\Debug\DBLayout.csprojResolveAssemblyReference.cache
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\obj\Debug\DBLayout.exe
+C:\Users\Lappytoppy\Desktop\white-elephant\DBLayout\DBLayout\obj\Debug\DBLayout.pdb

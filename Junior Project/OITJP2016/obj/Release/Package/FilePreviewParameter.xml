@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<parameters>
+  <parameter name="IIS Web Application Name" description="" value="WhiteElephantGiftPlanner" tags="IisApp">
+    <parameterEntry kind="ProviderPath" scope="IisApp" match="^C:\\Users\\Pat\\Documents\\School\\CST316\\ProjectMain\\white-elephant\\OITJP2016\\obj\\Release\\Package\\PackageTmp$" />
+    <parameterEntry kind="ProviderPath" scope="setAcl" match="^C:\\Users\\Pat\\Documents\\School\\CST316\\ProjectMain\\white-elephant\\OITJP2016\\obj\\Release\\Package\\PackageTmp$" />
+  </parameter>
+  <parameter name="WhiteElephantConnectionString-Web.config Connection String" description="" value="Data Source=tcp:whiteelephantdb.database.windows.net,1433;Initial Catalog=WhiteElephantDB;Persist Security Info=False;&#xD;&#xA;      User ID=oitjp2016;Password=e8Mf0kID0a75;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30" tags="">
+    <parameterEntry kind="XmlFile" scope="C:\\Users\\Pat\\Documents\\School\\CST316\\ProjectMain\\white-elephant\\OITJP2016\\obj\\Release\\Package\\PackageTmp\\Web\.config$" match="/configuration/connectionStrings/add[@name='WhiteElephantConnectionString']/@connectionString" />
+  </parameter>
+</parameters>

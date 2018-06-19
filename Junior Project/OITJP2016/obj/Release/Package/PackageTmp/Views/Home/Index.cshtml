@@ -1,0 +1,689 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+    SelectList grp = new SelectList(ViewBag.Groups, "Value", "Text");
+    SelectList evt = new SelectList(ViewBag.Events, "Value", "Text");
+    SelectList peu = new SelectList(ViewBag.PossEventUsers, "Value", "Text");
+    List<usp_GetGroupUsersResult> groupUsers = new List<usp_GetGroupUsersResult>();
+    List<usp_GetEventUsersResult> eventUsers = new List<usp_GetEventUsersResult>();
+    List<usp_GetEventGiftsResult> eventGifts = new List<usp_GetEventGiftsResult>();
+    List<SelectListItem> groupMembers = new List<SelectListItem>();
+    if (ViewBag.EventUsers != null)
+    {
+        eventUsers = ViewBag.EventUsers;
+    }
+    if (ViewBag.GroupUsers != null)
+    {
+        groupUsers = ViewBag.GroupUsers;
+    }
+    if (ViewBag.EventGifts != null)
+    {
+        eventGifts = ViewBag.EventGifts;
+    }
+}
+
+<div class="row">
+@*<div class="container">*@
+    <h1>The White Elephant Gift Planner</h1>
+    <strong>Select your Group or create a new one:</strong><br /><br />
+
+    @*Group Selection Form*@
+    @using (Html.BeginForm("AddGroup", "Home", new { GroupData = Request.Form["GroupData"], GroupName = Request.Form["GroupName"] }, FormMethod.Get, new { @id = "GroupForm", @enctype = "multipart/form-data", @class = "form-inline" }))
+    {
+        <div class="input-prepend">
+            <span class="add-on">Group</span>
+            @Html.DropDownList("GroupData", grp, new { @id = "GroupData_DDL", @class = "dropdown", onchange = "SubmitGroup()" })
+            <a id="AddGroup" class="btn btn-success fa fa-plus-square fa-lg" title="Add a group"></a>
+            <a id="DeleteGroup" class="btn btn-danger fa fa-trash fa-lg" title="Delete a group"></a>
+        </div>
+        <div class="input-prepend" style="display:none" id="AddGroupData">
+            @Html.Raw("Group Name: ")
+            @Html.TextBox("GroupName")
+            <a id="AddGroupSubmit" class="btn btn-primary fa fa-arrow-circle-right" title="Add a new groupp"></a>
+        </div>
+    }
+    @if (groupUsers.Any())
+    {
+        @Html.Raw("<br />")
+
+        <input type="button" class="btn-xs" title="Group Members" id="GroupMembers" onclick="ShowElement('ShowGroupMembers')" value="+" />
+        @Html.Raw("Group Members")
+        <div class="input-prepend" style="display:none" id="ShowGroupMembers">
+            <div class="GroupMemberTable">
+                <table class="table table-striped" id="GroupTable">
+                    <thead>
+                        <tr>
+                            <th>
+                                User Name
+                            </th>
+                            <th>
+                                Email
+                            </th>
+                            <th>
+                                Status
+                            </th>
+                            <th>
+                                Registered
+                            </th>
+                            @if (groupUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+                            {
+                                <th>
+                                    Actions
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody id="GroupUsers">
+                        @foreach (usp_GetGroupUsersResult ur in groupUsers)
+                        {
+                            string email = ur.Email + ur.InvitedEmail;
+                            <tr>
+                                <td>
+                                    @ur.UserName
+                                </td>
+                                <td>
+                                    @if (ur.Email != null)
+                                    {
+                                        @ur.Email
+                                    }
+                                    else
+                                    {
+                                        @ur.InvitedEmail
+                                    }
+                                </td>
+                                <td>
+                                    @ur.Status
+                                </td>
+                                <td>
+                                    @if (ur.Email != null)
+                                    {
+                                        @Html.Raw("Y")
+                                    }
+                                    else
+                                    {
+                                        @Html.Raw("N")
+                                    }
+                                </td>
+                                @if (groupUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+                                {
+                                    <td>
+                                        <input type="button" style="float:left" class="btn-xs btn-danger" title="Remove User" id="Stat_@ur.Status _Remove_@email" onclick="RemoveUserFromGroup(this.id)" value="-" />
+                                        @if (ur.Status != "Admin" && ur.Email != null)
+                                        {
+                                            <input type="button" style="float:left" class="btn-xs btn-success" title="Make User Admin" id="@ur.Email" onclick="MakeUserGroupAdmin(this.id)" value="+ Admin" />
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (groupUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+            {
+                @Html.Raw("<br />")
+                <input type="button" class="btn icon-plus btn-success" title="Add a Group Member" id="AddGroupMemberBtn" onclick="ShowElement('AddGroupMember')" value="+" />
+                @Html.Raw("Add a Group Member")
+                <div class="input-prepend" style="display:none" id="AddGroupMember">
+                    @Html.Raw("Email Address:")
+                    <input type="text" id="AddGroupUserEmail" />
+                    <input type="button" onclick="AddGroupMember()" value="Add User" />
+                </div>
+            }
+
+        </div>
+        <br /><br />
+        @*Event Selection*@
+        <div class="input-prepend">
+            <span class="add-on">Event</span>
+            @Html.DropDownList("EventData", evt, new { @id = "EventData_DDL", @class = "dropdown", onchange = "SubmitEvent()" })
+            <input type="button" class="btn icon-plus btn-success" title="Add an event" id="AddEvent" onclick="ShowElement('AddEventData')" value="+" />
+            <input type="button" class="btn icon-plus btn-danger" title="Delete an event" id="DeleteEvent" onclick="DeleteEventData()" value="-" />
+        </div>
+        <div class="input-prepend" style="display:none" id="AddEventData">
+            @Html.Raw("Event Name: ")
+            @Html.TextBox("EventName")
+            @Html.Raw("Event Date: ")
+            <input type="date" id="EventDate" />
+            @Html.Raw("Maximum Gift Price: $")
+            @Html.TextBox("EventGiftPrice")
+            <input type="button" class="btn btn-primary" title="Add a new event" onclick="AddEvent()" value="Submit" />
+        </div>
+        if (eventUsers.Any())
+        {
+            @Html.Raw("<br />")
+            <input type="button" class="btn-xs" title="Event Members" id="EventMembers" onclick="ShowElement('ShowEventMembers')" value="+" />
+            @Html.Raw("Event Members")
+            <div class="input-prepend" style="display:none" id="ShowEventMembers">
+                <div class="EventMemberTable">
+                    <table class="table table-striped" id="EventTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    User Name
+                                </th>
+                                <th>
+                                    Email
+                                </th>
+                                <th>
+                                    Status
+                                </th>
+                                @if (eventUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+                                {
+                                    <th>
+                                        Actions
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody id="EventUsers">
+                            @foreach (usp_GetEventUsersResult ur in eventUsers)
+                            {
+                                string email = ur.Email;
+                                <tr>
+                                    <td>
+                                        @ur.UserName
+                                    </td>
+                                    <td>
+                                        @ur.Email
+                                    </td>
+                                    <td>
+                                        @ur.Status
+                                    </td>
+                                    @if (eventUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+                                    {
+                                        <td>
+                                            <input type="button" style="float:left" class="btn-xs btn-danger" title="Remove User" id="Stat_@ur.Status _Remove_@email" onclick="RemoveUserFromEvent(this.id)" value="-" />
+                                            @if (ur.Status != "Admin" && ur.Email != null)
+                                            {
+                                                <input type="button" style="float:left" class="btn-xs btn-success" title="Make User Admin" id="@ur.Email" onclick="MakeUserEventAdmin(this.id)" value="+ Admin" />
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (eventUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().Status == "Admin")
+                    {
+                    @Html.Raw("<br />")
+                    <input type="button" class="btn icon-plus btn-success" title="Add an Event Member" id="AddEventMemberBtn" onclick="ShowElement('AddEventMember')" value="+" />
+                        @Html.Raw("Add an Event Member")
+                        
+                        <div class="input-prepend" style="display:none" id="AddEventMember">
+                            @Html.Raw("<br />")
+                            @Html.Raw("Eligible group members: ")
+                            @Html.DropDownList("EventGroupMembers", peu, new { @id = "EventGroupMems_DDL", @class = "dropdown", onchange = "AddMemberToEvent()" })
+                            <input type="button" onclick="AddEventMember()" value="Add Event User" />
+                            @*@Html.Raw("Group Members")
+                                <input type="" id="AddGroupUserEmail" />
+                                <input type="button" onclick="AddGroupMember()" value="Add User" />*@
+                        </div>
+                }
+            </div>
+        }
+
+        if (eventUsers.Any())
+        {
+            @Html.Raw("<br /><br />")
+            <input type="button" class="btn-xs" title="Event Gifts" id="EventGifts" onclick="ShowElement('ShowEventGifts')" value="+" />
+            @Html.Raw("Event Gifts")
+
+            
+
+            <div class="input-prepend" style="display:none" id="ShowEventGifts">
+                @*Add Gift*@
+                <br /><br />
+                <div>
+                    <span class="add-on">Add Gift</span>
+                    <input type="button" class="btn icon-plus btn-success" title="Add a gift" id="AddGift" onclick="ShowElement('AddGiftData')" value="+" />
+                </div>
+
+
+                @*Gift input*@
+                <div class="input-prepend" style="display:none" id="AddGiftData">
+                    @Html.Raw("Gift Title: ")
+                    @Html.TextBox("GiftTitle")
+                    @Html.Raw("Gift Description: ")
+                    @Html.TextBox("GiftDescription")
+                    @Html.Raw("Price: ")
+                    @Html.TextBox("GiftPrice")
+                    @Html.Raw("Gift URL: ")
+                    @Html.TextBox("GiftURL")
+                    <input type="button" class="btn btn-primary" title="Add a Gift" onclick="AddGift()" value="Submit" />
+                </div>
+                <div class="EventGiftTable">
+                    <table class="table table-striped" id="GiftTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Gift Title
+                                </th>
+                                <th>
+                                    Gift Description
+                                </th>
+                                <th>
+                                    Gift Price
+                                </th>
+                                <th>
+                                    URL
+                                </th>
+                                <th>
+                                    Actions
+                                </th>                                
+                            </tr>
+                        </thead>
+                        <tbody id="EventGifts">
+                            @foreach (usp_GetEventGiftsResult gr in eventGifts)
+                            {
+
+                                <tr>
+                                    <td>
+                                        @gr.Title
+                                    </td>
+                                    <td>
+                                        @gr.Description
+                                    </td>
+                                    <td>
+                                        @gr.Price
+                                    </td>
+                                    <td>
+                                        @gr.URL
+                                    </td>
+                                    <td>
+                                        @if(gr.ClaimUserEventId != null && eventUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().UserEventId == gr.ClaimUserEventId)
+                                        {
+                                            <input type="button" style="float:left" class="btn-xs btn-primary" title="Unclaim gift" id="@gr.GiftId" onclick="SetClaimGift(this.id)" value="- Unclaim" />
+                                        }
+                                        else if(eventUsers.Where(x => x.UserName == User.Identity.Name).FirstOrDefault().UserEventId == gr.SubmitUserEventId)
+                                        {
+                                            <input type="button" style="float:left" class="btn-xs btn-danger" title="Delete Gift" id="@gr.GiftId" onclick="DeleteGift(this.id)" value="Delete" />
+                                        }
+                                        else if(gr.ClaimUserEventId != null)
+                                        {
+                                            @Html.Raw("Gift Claimed");
+                                        }
+
+                                        else if(gr.ClaimUserEventId == null)
+                                        {
+                                            <input type="button" style="float:left" class="btn-xs btn-success" title="Claim gift" id="@gr.GiftId" onclick="SetClaimGift(this.id)" value="+ Claim" />
+                                        }                                        
+                                    </td>
+                                    
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+        }
+
+        
+
+
+        //Todo(Patrick): Add display for gift list.
+
+                @*<p>Select an Event or create a new one for your Group:</p>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" id="EventMenu" type="button" data-toggle="dropdown"> Event <span class="caret"></span></button>
+                        <button type="button" class="btn btn-primary"> + </button>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="EventMenu">
+                            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">1st Event Here</a></li>
+                            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">2nd Event Here</a></li>
+                            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">3rd Event Here</a></li>
+                        </ul>
+                    </div>
+                    <br /><br />
+                    <p>Add a new gift or view the gifts chosen by members at your Event:</p><br />
+                    <input type="text" id="GiftTextbox">
+                    <button onclick="addGift()"> Add Gift to List! </button>
+                    <script>
+                        function addGift() {
+                            var gift = document.getElementById("GiftTextbox").value;
+                            document.getElementById("displayGift").innerHTML = gift;
+                        }
+                    </script>
+                    <p id="displayGift"></p>
+                    <br /><br />*@
+                @*Need to figure out how to get a container of a list of gifts here, not sure as of yet how to go about this.*@
+                }
+                
+            </div>
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+        });
+
+        $("#AddGroup").click(function () { ShowElement('AddGroupData'); });
+        $("#DeleteGroup").click(function () { DeleteGroupData(); });
+        $("#AddGroupSubmit").click(function () { SubmitNewGroup(); });
+
+        
+        function SubmitNewGroup() {
+            var gn = document.getElementById("GroupName").value;
+            var gd = document.getElementById("GroupData_DDL").value;
+            if (gn == "") {
+                alert("Group must have a valid name");
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: '/Home/AddGroup/',
+                    data: { GroupData: gd, GroupName: gn },
+                    success: function (data) {
+                        window.location.reload(true);
+                    },
+                    error: function (xhr, status) {
+                        alert("The group could not be added");
+                        window.location.reload(true);
+                    }
+                });
+                //document.getElementById("GroupForm").submit();
+            }
+        }
+        function SubmitGroup() {
+            var gd = document.getElementById("GroupData_DDL").value;
+            $.ajax({
+                type: "POST",
+                url: '/Home/GroupSubmit/',
+                data: { GroupData: gd, EventData: null },
+                success: function (data) {
+                    var newUrl = '/Home/GroupSubmit?GroupData=' + gd;
+                    window.location.href = newUrl;
+                },
+                error: function (xhr, status) {
+                    alert("The group could not be loaded");
+                    window.location.reload(true);
+                }
+            });
+        }
+        function SubmitEvent() {
+            var gd = document.getElementById("GroupData_DDL").value;
+            var ed = document.getElementById("EventData_DDL").value;
+            if (ed == "") {
+                alert("An event must be selected");
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: '/Home/GroupSubmit/',
+                    data: { GroupData: gd, EventData: ed },
+                    success: function (data) {
+                        var newUrl = '/Home/Index?GroupData=' + gd + '&EventData=' + ed;
+                        window.location.href = newUrl;
+                    },
+                    error: function (xhr, status) {
+                        alert("The event could not be selected and failed with an error of: " + status);
+                        window.location.reload(true);
+                    }
+                });
+            }
+        }
+        function AddEvent() {
+            var en = document.getElementById("EventName");
+            var egp = document.getElementById("EventGiftPrice");
+            var egdate = document.getElementById("EventDate");
+            var gd = document.getElementById("GroupData_DDL");
+            if (en.value == "") {
+                alert("Event must have a valid name");
+            }
+            else if (egdate.valueAsDate == null) {
+                alert("Event must have a valid date");
+            }
+            else if (!VerifyDecimalValue(egp.value)) {
+                alert("Gift price must be in a number format with only one decimal point and must be at least a penny");
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: '/Home/AddEvent/',
+                    data: { GroupID: gd.value, EventData: null, EventName: en.value, EventGiftPrice: egp.value, EventDate: egdate.value },
+                    success: function (data) {
+                        window.location.reload(true);
+                    },
+                    error: function (xhr, status) {
+                        alert("The event could not be created and failed with an error of: " + status);
+                        window.location.reload(true);
+                    }
+                });
+            }
+        }
+        function AddGift() {
+            var ttl = document.getElementById("GiftTitle");
+            var des = document.getElementById("GiftDescription");
+            var prc = document.getElementById("GiftPrice");
+            var url = document.getElementById("GiftURL");
+            var ed = document.getElementById("EventData_DDL");
+            var gd = document.getElementById("GroupData_DDL");
+
+            if (ttl.value == "") {
+                alert("Gift must have a title!");
+            }
+            else if (des == "") {
+                alert("Gift must have a description");
+            }
+            else if (!VerifyDecimalValue(prc.value)) {
+                alert("Gift price must be in a number format with only one decimal point and must be at least a penny");
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: '/Home/AddGiftToEvent/',
+                    data: { GroupID: gd.value, EventID: ed.value, GiftData: null, GiftTitle: ttl.value, GiftDescription: des.value, GiftPrice: prc.value, GiftURL: url.value },
+                    success: function (data) {
+                        window.location.reload(true);
+                    },
+                    error: function (xhr, status) {
+                        alert("The gift could not be added and failed with an error of: " + status);
+                        window.location.reload(true);
+                    }
+                });
+            }
+        }
+
+        function SetClaimGift(id) {
+            var gid = id;
+            var ed = document.getElementById("EventData_DDL");
+            var gd = document.getElementById("GroupData_DDL");
+            if (gid == null) {
+                alert("No Gift Data was passed");
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/SetGiftClaim/",
+                    data: { GiftID: gid, EventID: ed.value, GroupID: gd.value },
+                    success: function (data) {
+                        window.location.reload(true);
+                    },
+                    error: function (xhr, status) {
+                        alert("The gift could not be updated and failed with an error of: " + status);
+                        window.location.reload(true);
+                    }
+                });
+            }
+        }
+     
+        function DeleteGift(id) {
+            var gid = id;
+            var ed = document.getElementById("EventData_DDL");
+            var gd = document.getElementById("GroupData_DDL");
+            $.ajax({
+                type: "POST",
+                url: "/Home/DeleteGift/",
+                data: { GiftID: gid, EventID: ed.value, GroupID: gd.value },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The gift could not be deleted and failed with an error of: " + status);
+                    window.location.reload(true);
+                }
+            });
+        }
+
+        function DeleteGroupData() {
+            var gd = document.getElementById("GroupData_DDL").value;
+            var url = "/Home/DeleteGroup/";
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: { IdToDelete: gd },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The group could not be deleted");
+                    window.location.reload(true);
+                }
+            });
+            //$.post(url);
+            //location.reload();
+        }
+        function VerifyDecimalValue(input) {
+            if (input.length == 0) {
+                return false;
+            }
+            else if (input.split('.').length > 2) {
+                return false;
+            }
+            else {
+                for (var i = 0, len = input.length; i < len; i++) {
+                    var cc = input.charCodeAt(i);
+                    if (cc < 48 || cc > 57) {
+                        if (cc != 46) {
+                            return false
+                        }
+                    }
+                }
+            }
+            var num = parseFloat(input);
+            if (num >= 0.01) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        function ShowElement(id) {
+            var data = document.getElementById(id);
+            if (data.style.display == 'block') {
+                data.style.display = 'none';
+            }
+            else {
+                data.style.display = 'block';
+            }
+            
+        }
+        function RemoveUserFromGroup(id) {
+            var removePoint = id.indexOf(" _Remove_")
+            var stat = id.substring(5, removePoint)
+            var userEmail = id.substring(removePoint + 9)
+            var groupId = document.getElementById("GroupData_DDL").value;
+            if (stat == "Admin") {
+                var adminCount = 0;
+                var users = document.getElementById("GroupUsers");
+                for (var i = 0; i < users.children.length; i++) {
+                    var item = users.children[i].children;
+                    var status = item[2].innerText;
+                    if (status == "Admin") {
+                        adminCount++;
+                    }
+                }
+                if (adminCount < 2) {
+                    alert("The group must have at least one admin. Add another admin before removing the only one.")
+                }
+                else {
+                    DeleteGroupUser(groupId, userEmail);
+                }
+            }
+            else {
+                DeleteGroupUser(groupId, userEmail);
+            }
+        }
+        function DeleteGroupUser(groupId, userEmail) {
+            $.ajax({
+                type: "POST",
+                url: "/Home/DeleteGroupUser/",
+                data: { GroupId: groupId, UserToDelete: userEmail },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The group user could not be deleted");
+                    window.location.reload(true);
+                }
+            });
+        }
+        function MakeUserGroupAdmin(id) {
+            var groupId = document.getElementById("GroupData_DDL").value;
+            $.ajax({
+                type: "POST",
+                url: "/Home/AddGroupAdmin/",
+                data: { Email: id, GroupId: groupId, Status: "Admin" },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The group user could not be deleted");
+                    window.location.reload(true);
+                }
+            });
+        }
+        function MakeUserEventAdmin(id) {
+            var groupId = document.getElementById("GroupData_DDL").value;
+            var eventId = document.getElementById("EventData_DDL").value;
+            var url = "/Home/AddEventAdmin/";
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: { Email: id, Status: "Admin", GroupId: groupId, EventId: eventId },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The user could not be made an Admin");
+                    window.location.reload(true);
+                }
+            });
+            //$.post(url);
+            //location.reload();
+        }
+        function AddGroupMember() {
+            var userEmail = document.getElementById("AddGroupUserEmail").value
+            var groupId = document.getElementById("GroupData_DDL").value;
+            var emailData = "{'userEmail': '" + userEmail + "'}";
+            $.ajax({
+                type: "POST",
+                url: "/Home/AddUserToGroup/",
+                data: { Email: userEmail, Status: "User", GroupId: groupId },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The user could not be added to the group");
+                    window.location.reload(true);
+                }
+            });
+        }
+        function AddEventMember() {
+            var userEmail = document.getElementById("EventGroupMems_DDL").value
+            var eventId = document.getElementById("EventData_DDL").value;
+            var groupId = document.getElementById("GroupData_DDL").value;
+            var url = "/Home/AddUserToEvent/";
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: { Email: userEmail, Status: "User", GroupId: groupId, EventId: eventId },
+                success: function (data) {
+                    window.location.reload(true);
+                },
+                error: function (xhr, status) {
+                    alert("The user could not be added to the event");
+                    window.location.reload(true);
+                }
+            });
+        }
+    </script>
+}
